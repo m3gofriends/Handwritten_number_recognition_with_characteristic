@@ -425,7 +425,7 @@ def classify(img):
     print("-----------------")
     print("Number of hole: " + str(hole_counter - 1 - small_hole)) 
     number_of_hole(img, hole_img, hole_counter - 1 - small_hole)
-    cv.imshow("find hole", hole_img)
+    cv.imshow("Find hole", hole_img)
     
 def Execute():
 
