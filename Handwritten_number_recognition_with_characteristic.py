@@ -29,22 +29,6 @@ def Erase(my_text):
 """   Tkinter環境設定   """
 
 
-def number_of_hole(img, hole_img, hole_counter):
-    
-    """   判斷hole的數量去執行相對應的函式
-          0個hole執行zero_of_hole
-          1個hole執行one_of_hole
-          2個hole執行my_text.set("Answer : 8")
-          大於2個hole則執行my_text.set("Error : holes number = " + str(hole_counter) + "( > 2 )"))   """
-          
-    switcher = {
-        0:zero_of_hole, 
-        1:one_of_hole, 
-        2:lambda x1, x2:my_text.set("Answer : 8") #參數x1, x2從未使用, 為了return function
-        }
-    func = switcher.get(hole_counter, lambda x1, x2:my_text.set("Error : holes number = " + str(hole_counter) + "( > 2 )")) #參數x1, x2從未使用, 為了return function
-    return func(img, hole_img)
-
 def FindCornerPoint(img, StartPoint, EndPoint, total_pixels, LR_CornerPoint, TB_CornerPoint):
 
     """   輸入參數分別為(圖片, 數字的起點, 數字的終點, 數字本身的pixel總數, 儲存左右兩側Corner的list, 儲存上下兩側Corner的list)
@@ -150,6 +134,22 @@ def FindCornerPoint(img, StartPoint, EndPoint, total_pixels, LR_CornerPoint, TB_
     LR_StepCounter_list.append(LR_StepCounter)
     TB_StepCounter_list.append(TB_StepCounter)
     return LR_direction, TB_direction, LR_StepCounter_list, TB_StepCounter_list
+
+def number_of_hole(img, hole_img, hole_counter):
+    
+    """   判斷hole的數量去執行相對應的函式
+          0個hole執行zero_of_hole
+          1個hole執行one_of_hole
+          2個hole執行my_text.set("Answer : 8")
+          大於2個hole則執行my_text.set("Error : holes number = " + str(hole_counter) + "( > 2 )"))   """
+          
+    switcher = {
+        0:zero_of_hole, 
+        1:one_of_hole, 
+        2:lambda x1, x2:my_text.set("Answer : 8") #參數x1, x2從未使用, 為了return function
+        }
+    func = switcher.get(hole_counter, lambda x1, x2:my_text.set("Error : holes number = " + str(hole_counter) + "( > 2 )")) #參數x1, x2從未使用, 為了return function
+    return func(img, hole_img)
     
 def zero_of_hole(img, hole_img = None):
     h, w = img.shape[:2]
@@ -264,26 +264,25 @@ def zero_of_hole(img, hole_img = None):
             my_text.set("Answer : 2")
             root.mainloop()
 
-        elif len(LR_direction) == 3:
-            my_text.set("Answer : 3")
-            root.mainloop()
-
         elif LR_direction == ['LEFT', 'RIGHT']:
             my_text.set("Answer : 5")
             root.mainloop()
-            
+
+        else:
+            my_text.set("Answer : 3")
+            root.mainloop()
 
     elif len(LR_CornerPoint) < 2 or len(LR_CornerPoint) > 3:
         if TB_direction == ['BOTTOM', 'TOP'] and w - EndPoint[0][1] < EndPoint[0][1] - 0:
             my_text.set("Answer : 2")
             root.mainloop()
 
-        elif len(TB_direction) == 3:
-            my_text.set("Answer : 3")
-            root.mainloop()
-
         elif TB_direction == ['BOTTOM', 'TOP'] and w - EndPoint[0][1] > EndPoint[0][1] - 0:
             my_text.set("Answer : 5")
+            root.mainloop()
+
+        else:
+            my_text.set("Answer : 3")
             root.mainloop()
 
     elif min(LR_StepCounter_list) > min(TB_StepCounter_list):
@@ -291,12 +290,12 @@ def zero_of_hole(img, hole_img = None):
             my_text.set("Answer : 2")
             root.mainloop()
 
-        elif len(LR_direction) == 3:
-            my_text.set("Answer : 3")
-            root.mainloop()
-
         elif LR_direction == ['LEFT', 'RIGHT']:
             my_text.set("Answer : 5")
+            root.mainloop()
+
+        else:
+            my_text.set("Answer : 3")
             root.mainloop()
 
     else:
@@ -304,12 +303,12 @@ def zero_of_hole(img, hole_img = None):
             my_text.set("Answer : 2")
             root.mainloop()
 
-        elif len(TB_direction) == 3:
-            my_text.set("Answer : 3")
-            root.mainloop()
-
         elif TB_direction == ['BOTTOM', 'TOP'] and w - EndPoint[0][1] > EndPoint[0][1] - 0:
             my_text.set("Answer : 5")
+            root.mainloop()
+
+        else:
+            my_text.set("Answer : 3")
             root.mainloop()
             
     my_text.set("Error : Number not found (0 hole)") #什麼都沒找到會輸出這個
@@ -381,29 +380,6 @@ def one_of_hole(img, hole_img):
         
     cv.imshow("Find line", img)
     cv.imshow("Dilated hole", hole_img)
-       
-def rotate_and_crop(img, rect):
-
-    """   先做膨脹再旋轉圖片(因為旋轉圖片會變形圖片且顏色會些微改變)
-          用二值化恢復顏色
-          再來做骨架化
-          最後裁切圖片於適當大小   """
-    
-    h, w = img.shape[:2]
-    img = cv.dilate(img, np.ones((3, 3), np.uint8), iterations = 1)
-    if rect[1][0] < rect[1][1]:
-        rotated_img = cv.warpAffine(img, cv.getRotationMatrix2D(rect[0], rect[2], 1.0), (w, h))
-    else:
-        rotated_img = cv.warpAffine(img, cv.getRotationMatrix2D(rect[0], rect[2] - 270, 1.0), (w, h))
-    _, rotated_img = cv.threshold(rotated_img, 0, 255, cv.THRESH_BINARY) #旋轉後顏色會些微改變，這邊採用二值化恢復，不然數字會有虛線造成hole數量辨識錯誤
-    rotated_img[rotated_img==255] = 1
-    skeleton_img = morphology.skeletonize(rotated_img, method = 'lee')
-    rotated_img = skeleton_img.astype(np.uint8) * 255
-    contours, _ = cv.findContours(rotated_img, cv.RETR_EXTERNAL , cv.CHAIN_APPROX_SIMPLE)
-    x, y, w, h = cv.boundingRect(max(contours, key = cv.contourArea))
-    cropped_img = np.zeros((h + 20, w + 20), np.uint8)
-    cropped_img[10: -10, 10: -10] = rotated_img[y:y + h, x:x + w]
-    return cropped_img
 
 def classify(img):
 
@@ -426,6 +402,29 @@ def classify(img):
     print("Number of hole: " + str(hole_counter - 1 - small_hole)) 
     number_of_hole(img, hole_img, hole_counter - 1 - small_hole)
     cv.imshow("Find hole", hole_img)
+
+def rotate_and_crop(img, rect):
+
+    """   先做膨脹再旋轉圖片(因為旋轉圖片會變形圖片且顏色會些微改變)
+          用二值化恢復顏色
+          再來做骨架化
+          最後裁切圖片於適當大小   """
+    
+    h, w = img.shape[:2]
+    img = cv.dilate(img, np.ones((3, 3), np.uint8), iterations = 1)
+    if rect[1][0] < rect[1][1]:
+        rotated_img = cv.warpAffine(img, cv.getRotationMatrix2D(rect[0], rect[2], 1.0), (w, h))
+    else:
+        rotated_img = cv.warpAffine(img, cv.getRotationMatrix2D(rect[0], rect[2] - 270, 1.0), (w, h))
+    _, rotated_img = cv.threshold(rotated_img, 0, 255, cv.THRESH_BINARY) #旋轉後顏色會些微改變，這邊採用二值化恢復，不然數字會有虛線造成hole數量辨識錯誤
+    rotated_img[rotated_img==255] = 1
+    skeleton_img = morphology.skeletonize(rotated_img, method = 'lee')
+    rotated_img = skeleton_img.astype(np.uint8) * 255
+    contours, _ = cv.findContours(rotated_img, cv.RETR_EXTERNAL , cv.CHAIN_APPROX_SIMPLE)
+    x, y, w, h = cv.boundingRect(max(contours, key = cv.contourArea))
+    cropped_img = np.zeros((h + 20, w + 20), np.uint8)
+    cropped_img[10: -10, 10: -10] = rotated_img[y:y + h, x:x + w]
+    return cropped_img
     
 def Execute():
 
